@@ -3,6 +3,7 @@ import Register from "../pages/Register";
 import Login from "../pages/Login";
 import { useAuthStore } from "../store/authStore";
 import { Typography } from "antd";
+import Profile from "../pages/Profile";
 
 const { Title } = Typography;
 
@@ -31,6 +32,10 @@ const AppRouter = () => {
             <Navigate to="/login" />
           )
         }
+      />
+      <Route
+        path="/profile"
+        element={isAuth ? <Profile /> : <Navigate to="/login" />}
       />
     </Routes>
   );

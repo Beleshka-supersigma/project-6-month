@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Form, Input, Button, Card } from "antd";
 
 const Login = () => {
-  const { login, isLoading, error } = useAuthStore();
+  const { login, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -42,14 +42,20 @@ const Login = () => {
           <Input
             placeholder="Email"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(e) => {
+              if (error) clearError();
+              setForm({ ...form, email: e.target.value });
+            }}
             style={{ marginBottom: 16 }}
           />
 
           <Input.Password
             placeholder="Password"
             value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(e) => {
+              if (error) clearError();
+              setForm({ ...form, password: e.target.value });
+            }}
             style={{ marginBottom: 16 }}
           />
 
