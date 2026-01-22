@@ -1,79 +1,59 @@
 import { useState } from "react";
-import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
-import { Button, Card, Form, Input, Typography } from "antd";
-
-const { Title } = Typography;
+import { Form, Input, Button, Card, Alert } from "antd";
+import { useRegister } from "../hooks/useAuth";
 
 const Register = () => {
-  const { isLoading, register, error } = useAuthStore();
   const navigate = useNavigate();
+  const registerMutation = useRegister();
 
   const [form, setForm] = useState({
-    username: "",
     email: "",
     password: "",
   });
 
-  const submit = async () => {
-    if (await register(form)) {
-      navigate("/login");
-    }
+  const submit = () => {
+    registerMutation.mutate(form, {
+      onSuccess: () => navigate("/login"),
+    });
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #1677ff, #69b1ff)",
-        padding: "20px",
-      }}
-    >
-      <Card
-        style={{
-          width: 360,
-          padding: "30px",
-          borderRadius: 12,
-        }}
-      >
-        <Form onFinish={submit} layout="vertical">
-          <Title level={3} style={{ textAlign: "center", marginBottom: 24 }}>
-            Register
-          </Title>
+    <Card title="Register" style={{ width: 400, margin: "100px auto" }}>
+      {registerMutation.isError && (
+        <Alert
+          type="error"
+          message={
+            registerMutation.error.response?.data?.message || "Register failed"
+          }
+        />
+      )}
 
-          <Input
-            value={form.username}
-            placeholder="Username"
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            style={{ marginBottom: 16 }}
-          />
-
+      <Form layout="vertical" onFinish={submit}>
+        <Form.Item label="Email">
           <Input
             value={form.email}
-            placeholder="Email"
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            style={{ marginBottom: 16 }}
           />
+        </Form.Item>
 
-          <Input
-            type="password"
+        <Form.Item label="Password">
+          <Input.Password
             value={form.password}
-            placeholder="Password"
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            style={{ marginBottom: 16 }}
           />
+        </Form.Item>
 
-          <Button type="primary" htmlType="submit" block loading={isLoading}>
-            Register
-          </Button>
-
-          {error && <p style={{ color: "red", marginTop: 8 }}>{error}</p>}
-        </Form>
-      </Card>
-    </div>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={registerMutation.isLoading}
+          block
+        >
+          Register
+        </Button>
+      </Form>
+    </Card>
   );
 };
 

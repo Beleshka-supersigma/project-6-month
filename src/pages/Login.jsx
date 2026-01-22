@@ -1,78 +1,59 @@
 import { useState } from "react";
-import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
-import { Form, Input, Button, Card } from "antd";
+import { Form, Input, Button, Card, Alert } from "antd";
+import { useLogin } from "../hooks/useAuth";
 
 const Login = () => {
-  const { login, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
+  const loginMutation = useLogin();
 
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
 
-  const submit = async () => {
-    if (await login(form)) {
-      navigate("/");
-    }
+  const submit = () => {
+    loginMutation.mutate(form, {
+      onSuccess: () => navigate("/"),
+    });
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg, #1677ff, #69b1ff)",
-        padding: "20px",
-      }}
-    >
-      <Card
-        style={{
-          width: 360,
-          padding: "30px",
-          borderRadius: 12,
-        }}
-      >
-        <Form layout="vertical" onFinish={submit}>
-          <h2 style={{ textAlign: "center", marginBottom: 24 }}>Login</h2>
+    <Card title="Login" style={{ width: 400, margin: "100px auto" }}>
+      {loginMutation.isError && (
+        <Alert
+          type="error"
+          message={
+            loginMutation.error.response?.data?.message || "Login failed"
+          }
+        />
+      )}
 
+      <Form layout="vertical" onFinish={submit}>
+        <Form.Item label="Email">
           <Input
-            placeholder="Email"
             value={form.email}
-            onChange={(e) => {
-              if (error) clearError();
-              setForm({ ...form, email: e.target.value });
-            }}
-            style={{ marginBottom: 16 }}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
+        </Form.Item>
 
+        <Form.Item label="Password">
           <Input.Password
-            placeholder="Password"
             value={form.password}
-            onChange={(e) => {
-              if (error) clearError();
-              setForm({ ...form, password: e.target.value });
-            }}
-            style={{ marginBottom: 16 }}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+        </Form.Item>
 
-          <Button
-            type="primary"
-            htmlType="submit"
-            block
-            loading={isLoading}
-            style={{ marginBottom: 16 }}
-          >
-            {isLoading ? "Loading..." : "Login"}
-          </Button>
-
-          {error && <p style={{ color: "red" }}>{error}</p>}
-        </Form>
-      </Card>
-    </div>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={loginMutation.isLoading}
+          block
+        >
+          Login
+        </Button>
+      </Form>
+    </Card>
   );
 };
 
