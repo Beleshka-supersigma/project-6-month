@@ -15,20 +15,23 @@ export const useCategoryStore = create((set) => ({
       });
     } catch (error) {
       console.error("Ошибка при загрузке категорий:", error);
-      set({
-        isLoading: false,
-      });
+      set({ isLoading: false });
     }
   },
 
   createCategory: async (title) => {
+    if (!title) return;
+
+    set({ isLoading: true });
     try {
       const response = await api.post("/categories", { title });
       set((state) => ({
         categories: [...state.categories, response.data],
+        isLoading: false,
       }));
     } catch (error) {
       console.error("Ошибка при создании категории:", error);
+      set({ isLoading: false });
       throw error;
     }
   },

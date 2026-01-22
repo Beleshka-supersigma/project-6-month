@@ -1,109 +1,74 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware"; // ДОБАВИЛ
 import { api } from "../api/axios";
 
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      categories: [],
-      isLoading: false,
-      user: null,
-      isAuth: false,
-      error: null,
+export const useAuthStore = create((set) => ({
+  user: JSON.parse(localStorage.getItem("user")) || null,
+  accessToken: localStorage.getItem("accessToken"),
+  refreshToken: localStorage.getItem("refreshToken"),
+  isAuth: !!localStorage.getItem("accessToken"),
+  isLoading: false,
+  error: null,
 
-      getCategories: async () => {
-        set({ isLoading: true });
-        const res = await api.get("/categories");
-        set({ categories: res.data, isLoading: false });
-      },
+  login: async (credentials) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post("/auth/login", credentials);
+      const { accessToken, refreshToken, user } = response.data;
 
-      createCategory: async (title) => {
-        try {
-          const res = await api.post("/categories", { title });
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("user", JSON.stringify(user)); // ✅ сохраняем юзера
 
-          set((state) => {
-            const updatedCategories = [...state.categories, res.data];
+      set({
+        user,
+        accessToken,
+        refreshToken,
+        isAuth: true,
+        isLoading: false,
+      });
 
-            return {
-              categories: updatedCategories,
-            };
-          });
-
-          return res.data;
-        } catch (error) {
-          console.error(error.response);
-          throw error;
-        }
-      },
-
-      login: async (credentials) => {
-        set({ isLoading: true, error: null });
-        try {
-          const res = await api.post("/auth/login", credentials);
-          const { accessToken, refreshToken, user } = res.data;
-
-          localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("refreshToken", refreshToken);
-
-          set({
-            user: user,
-            isAuth: true,
-            isLoading: false,
-          });
-          return true;
-        } catch (error) {
-          set({
-            error: error.response?.data?.message || "Login failed",
-            isLoading: false,
-          });
-          return false;
-        }
-      },
-
-      register: async (userData) => {
-        set({ isLoading: true, error: null });
-        try {
-          const res = await api.post("/auth/register", userData);
-          const { accessToken, refreshToken, user } = res.data;
-
-          localStorage.setItem("accessToken", accessToken);
-          localStorage.setItem("refreshToken", refreshToken);
-
-          set({
-            user: user,
-            isAuth: true,
-            isLoading: false,
-          });
-          return true;
-        } catch (error) {
-          set({
-            error: error.response?.data?.message || "Registration failed",
-            isLoading: false,
-          });
-          return false;
-        }
-      },
-
-      logout: () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        set({
-          user: null,
-          isAuth: false,
-          categories: [],
-          error: null,
-        });
-      },
-
-      clearError: () => set({ error: null }),
-    }),
-    {
-      name: "auth-storage",
-      partialize: (state) => ({
-        user: state.user,
-        isAuth: state.isAuth,
-        categories: state.categories,
-      }),
+      return true;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Login failed",
+        isLoading: false,
+        isAuth: false,
+      });
+      return false;
     }
-  )
-);
+  },
+
+  register: async (data) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      await api.post("/auth/register", data);
+
+      set({ isLoading: false });
+      return true;
+    } catch (err) {
+      set({
+        error: err.response?.data?.message || "Register failed",
+        isLoading: false,
+      });
+      return false;
+    }
+  },
+
+  getProfile: async () => {
+    const res = await api.get("/profile");
+    set({ profile: res.data });
+  },
+
+  setUser: (user) => set({ user, isAuth: !!user }),
+
+  logout: () => {
+    localStorage.clear();
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuth: false,
+    });
+  },
+}));

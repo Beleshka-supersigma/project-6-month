@@ -24,30 +24,42 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (!error.response) {
-      console.error("Network error:", error.message);
-      return Promise.reject(
-        new Error("Network error. Please check your connection.")
-      );
-    }
+    const isAuthRoute =
+      originalRequest.url.includes("/auth/login") ||
+      originalRequest.url.includes("/auth/register") ||
+      originalRequest.url.includes("/auth/refresh");
 
-    if (error?.response?.status === 401 && !originalRequest.__retry) {
+    if (
+      error?.response?.status === 401 &&
+      !originalRequest.__retry &&
+      !isAuthRoute
+    ) {
       originalRequest.__retry = true;
+
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) {
+        localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
       try {
-        const refreshToken = localStorage.getItem("refreshToken");
         const res = await axios.post("https://nu.tipo.lol/api/auth/refresh", {
           refreshToken,
         });
 
-        localStorage.setItem("accessToken", res.data.accessToken);
-        originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
+        const newAccessToken = res.data.accessToken;
+        localStorage.setItem("accessToken", newAccessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (e) {
         localStorage.clear();
         window.location.href = "/login";
-        console.log(e);
+        return Promise.reject(e);
       }
     }
+
     return Promise.reject(error);
   }
 );

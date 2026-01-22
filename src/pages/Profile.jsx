@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Avatar,
   Button,
@@ -12,6 +12,7 @@ import {
 } from "antd";
 import { UserOutlined, LogoutOutlined, PlusOutlined } from "@ant-design/icons";
 import { useAuthStore } from "../store/authStore";
+import { useCategoryStore } from "../store/categoryStore";
 import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
@@ -21,23 +22,20 @@ const Profile = () => {
   const [newCategory, setNewCategory] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { user, logout } = useAuthStore();
   const {
-    user,
-    logout,
     categories,
     getCategories,
     createCategory,
     isLoading: categoriesLoading,
-  } = useAuthStore();
+  } = useCategoryStore();
 
-  useState(() => {
+  useEffect(() => {
     getCategories();
-  }, []);
+  }, [getCategories]);
 
   const handleLogout = () => {
-    if (logout) {
-      logout();
-    }
+    logout();
     navigate("/login");
   };
 
@@ -59,50 +57,41 @@ const Profile = () => {
     }
   };
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div style={{ textAlign: "center", marginTop: 100 }}>
+        <Text type="secondary">Загрузка профиля...</Text>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 800, margin: "40px auto", padding: "0 20px" }}>
-      {/* Карточка профиля */}
       <Card style={{ marginBottom: 24 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
+        <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
           <Avatar size={80} icon={<UserOutlined />} />
           <div>
             <Title level={4} style={{ margin: 0 }}>
-              {user?.name}
+              {user.name}
             </Title>
-            <Text type="secondary">{user?.email}</Text>
+            <Text type="secondary">{user.email}</Text>
           </div>
         </div>
 
-        <div style={{ marginBottom: 24 }}>
-          <Text>
-            <b>Роль:</b> {user?.role || "user"}
-          </Text>
-        </div>
+        <Text>
+          <b>Роль:</b> {user.role || "user"}
+        </Text>
 
-        <Button danger icon={<LogoutOutlined />} onClick={handleLogout}>
-          Выйти
-        </Button>
+        <div style={{ marginTop: 24 }}>
+          <Button danger icon={<LogoutOutlined />} onClick={handleLogout}>
+            Выйти
+          </Button>
+        </div>
       </Card>
 
-      {/* Карточка категорий */}
       <Card
         title={
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Title level={4} style={{ margin: 0 }}>
               Мои категории
             </Title>
@@ -110,7 +99,6 @@ const Profile = () => {
           </div>
         }
       >
-        {/* Форма добавления категории */}
         <Form onFinish={handleAddCategory} style={{ marginBottom: 24 }}>
           <Space.Compact style={{ width: "100%" }}>
             <Input
@@ -118,52 +106,34 @@ const Profile = () => {
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               disabled={loading || categoriesLoading}
-              size="large"
             />
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={handleAddCategory}
+              htmlType="submit"
               loading={loading}
-              size="large"
             >
               Добавить
             </Button>
           </Space.Compact>
         </Form>
 
-        {/* Список категорий */}
         {categoriesLoading ? (
-          <div style={{ textAlign: "center", padding: "40px" }}>
-            <Text type="secondary">Загрузка категорий...</Text>
-          </div>
-        ) : categories && categories.length > 0 ? (
+          <Text type="secondary">Загрузка категорий...</Text>
+        ) : categories?.length ? (
           <List
             dataSource={categories}
             renderItem={(category, index) => (
               <List.Item>
                 <List.Item.Meta
-                  title={
-                    <Text strong>
-                      {index + 1}. {category.title || category.name}
-                    </Text>
-                  }
-                  description={
-                    <Text type="secondary">
-                      ID: {category.id} • Создано:{" "}
-                      {new Date(
-                        category.createdAt || Date.now()
-                      ).toLocaleDateString()}
-                    </Text>
-                  }
+                  title={`${index + 1}. ${category.title || category.name}`}
+                  description={`ID: ${category.id}`}
                 />
               </List.Item>
             )}
           />
         ) : (
-          <div style={{ textAlign: "center", padding: "40px" }}>
-            <Text type="secondary">Категорий пока нет. Добавьте первую!</Text>
-          </div>
+          <Text type="secondary">Категорий пока нет</Text>
         )}
       </Card>
     </div>
